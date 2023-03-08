@@ -9,16 +9,18 @@ def loss(diff, expectile=0.8):
     weight = jnp.where(diff > 0, expectile, (1 - expectile))
     return weight * (diff**2)
 
-
+# Equation 5 from paper
 def update_v(critic: Model, value: Model, batch: Batch,
              expectile: float) -> Tuple[Model, InfoDict]:
     actions = batch.actions
+
+    # Double critic method from value_net.py
     q1, q2 = critic(batch.observations, actions)
     q = jnp.minimum(q1, q2)
 
     def value_loss_fn(value_params: Params) -> Tuple[jnp.ndarray, InfoDict]:
         v = value.apply({'params': value_params}, batch.observations)
-        value_loss = loss(q - v, expectile).mean()
+        value_loss = loss(q - v, expectile).mean() # Use expectile regression
         return value_loss, {
             'value_loss': value_loss,
             'v': v.mean(),
@@ -28,11 +30,12 @@ def update_v(critic: Model, value: Model, batch: Batch,
 
     return new_value, info
 
-
+# Equation 6 from paper
 def update_q(critic: Model, target_value: Model, batch: Batch,
              discount: float) -> Tuple[Model, InfoDict]:
     next_v = target_value(batch.next_observations)
 
+    # r(s,a) + gamma * V(phi)
     target_q = batch.rewards + discount * batch.masks * next_v
 
     def critic_loss_fn(critic_params: Params) -> Tuple[jnp.ndarray, InfoDict]:

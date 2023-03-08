@@ -1,3 +1,7 @@
+"""
+Modified from original IQL implementation to store window size of k previous states
+"""
+
 import functools
 from typing import Optional, Sequence, Tuple
 
@@ -19,7 +23,7 @@ LOG_STD_MAX = 2.0
 class NormalTanhPolicy(nn.Module):
     hidden_dims: Sequence[int]
     action_dim: int
-    state_dependent_std: bool = True
+    state_dependent_std: bool = True # Change when non-Markovian
     dropout_rate: Optional[float] = None
     log_std_scale: float = 1.0
     log_std_min: Optional[float] = None
@@ -38,6 +42,9 @@ class NormalTanhPolicy(nn.Module):
 
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
+        # pi(a | s)
+        # pi (a | st, at-1 .... st-k, at-k-1)
+
         if self.state_dependent_std:
             log_stds = nn.Dense(self.action_dim,
                                 kernel_init=default_init(
@@ -53,6 +60,7 @@ class NormalTanhPolicy(nn.Module):
         if not self.tanh_squash_distribution:
             means = nn.tanh(means)
 
+        # Create log_probs distribution
         base_dist = tfd.MultivariateNormalDiag(loc=means,
                                                scale_diag=jnp.exp(log_stds) *
                                                temperature)
@@ -74,6 +82,7 @@ def _sample_actions(rng: PRNGKey,
     return rng, dist.sample(seed=key)
 
 
+# Sample k times
 def sample_actions(rng: PRNGKey,
                    actor_def: nn.Module,
                    actor_params: Params,

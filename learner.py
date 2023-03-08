@@ -63,11 +63,14 @@ class Learner(object):
                  opt_decay_schedule: str = "cosine"):
         """
         An implementation of the version of Soft-Actor-Critic described in https://arxiv.org/abs/1801.01290
+        Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor
         """
 
         self.expectile = expectile
         self.tau = tau
         self.discount = discount
+        # Temperature determines the relative importance of the entropy term against the reward, and thus
+        # controls the stochasticity of the optimal policy
         self.temperature = temperature
 
         rng = jax.random.PRNGKey(seed)
@@ -89,6 +92,7 @@ class Learner(object):
         else:
             optimiser = optax.adam(learning_rate=actor_lr)
 
+        # Evaluate the Q-function of the current policy and update the policy through an off-policy gradient update.
         actor = Model.create(actor_def,
                              inputs=[actor_key, observations],
                              tx=optimiser)

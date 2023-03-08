@@ -35,8 +35,10 @@ class DoubleCritic(nn.Module):
     @nn.compact
     def __call__(self, observations: jnp.ndarray,
                  actions: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        # Lab q theta hat
         critic1 = Critic(self.hidden_dims,
                          activations=self.activations)(observations, actions)
+        # Experiment setting q theta
         critic2 = Critic(self.hidden_dims,
                          activations=self.activations)(observations, actions)
         return critic1, critic2
