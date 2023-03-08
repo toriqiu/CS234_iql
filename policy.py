@@ -60,15 +60,31 @@ class NormalTanhPolicy(nn.Module):
         if not self.tanh_squash_distribution:
             means = nn.tanh(means)
 
-        # Create log_probs distribution
+        # Add flag that says if non-Markov -> LSTM architecture using k
+        k = 5 # Just for testing - set this in config / as a hyperparameter later
+
+        """
+        LSTM parameters:
+        input: tensor of shape (k, input_size) 
+            - k represents the window size for the non-Markov policy
+        
+        
+        Create a log_probs distribution that's non-Markovian
+        """
         base_dist = tfd.MultivariateNormalDiag(loc=means,
                                                scale_diag=jnp.exp(log_stds) *
                                                temperature)
-        if self.tanh_squash_distribution:
-            return tfd.TransformedDistribution(distribution=base_dist,
-                                               bijector=tfb.Tanh())
-        else:
-            return base_dist
+
+        return base_dist
+
+         # TODO
+        # Uncomment this: return nn.LSTMCell(input_size=[k, ) # Fix this later
+
+        # if self.tanh_squash_distribution:
+        #     return tfd.TransformedDistribution(distribution=base_dist,
+        #                                        bijector=tfb.Tanh())
+        # else:
+        #     return base_dist
 
 
 @functools.partial(jax.jit, static_argnames=('actor_def', 'distribution'))
