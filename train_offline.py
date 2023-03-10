@@ -9,7 +9,7 @@ from ml_collections import config_flags
 from tensorboardX import SummaryWriter
 
 import wrappers
-from dataset_utils import D4RLDataset, split_into_trajectories
+from dataset_utils import D4RLDataset, split_into_trajectories, non_markov_sample
 from evaluation import evaluate
 from learner import Learner
 
@@ -105,6 +105,26 @@ def main(_):
                     env.action_space.sample()[np.newaxis],
                     max_steps=FLAGS.max_steps,
                     **kwargs)
+    batch = non_markov_sample(new_dataset, FLAGS.batch_size)
+    # batch = dataset.sample(FLAGS.batch_size) # .sample returns an an object of observations, actions, rewards, masks, and next_observations
+
+    # print(batch)
+    # print(batch.observations.shape) #256, k, 29
+    # print(batch.actions.shape)
+    # print(batch.rewards.shape)
+    # print(batch.next_observations.shape)
+    # print(batch.masks.shape)
+    batch = non_markov_sample(new_dataset, FLAGS.batch_size)
+
+    # batch[0] => [(), (), ()] #k tuples
+    # 29 feature "embedding"
+    # LSTMs "I like food" =>
+    # I -> 10 features
+    # Like -> 10 features
+
+    # pad actions to be state size => state feature "embedding"
+    # s_i => embedding
+    # LSTM 2K inputs,
 
     eval_returns = []
     for i in tqdm.tqdm(range(1, FLAGS.max_steps + 1),

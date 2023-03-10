@@ -10,6 +10,11 @@ Batch = collections.namedtuple(
     'Batch',
     ['observations', 'actions', 'rewards', 'masks', 'next_observations'])
 
+def non_markov_sample(dataset, batch_size):
+    dataset_size = len(dataset)
+    indices = np.random.choice(dataset_size, batch_size, replace=False)
+    # for index in
+    # return dataset[indices]
 
 def split_into_trajectories(observations, actions, rewards, masks, dones_float,
                             next_observations):
