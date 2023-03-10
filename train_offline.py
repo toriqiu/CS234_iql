@@ -84,6 +84,21 @@ def main(_):
 
     env, dataset = make_env_and_dataset(FLAGS.env_name, FLAGS.seed)
 
+    k = 6 # TODO: change this later
+    trajectories = split_into_trajectories(dataset.observations, dataset.actions, dataset.rewards, dataset.masks,
+                                           dataset.dones_float,
+                                           dataset.next_observations)
+
+    # print(len(trajectories))
+    new_dataset = []
+    for trajectory in trajectories:
+        trajectory_length = len(trajectory)
+        for start_i in range(trajectory_length - k):
+            end_i = start_i + k
+            # print(start_i, end_i)
+            k_sample = trajectory[start_i:end_i]  # [(s_i, a_i, s_i+1, a_i+1...), (), (), ()]
+            new_dataset.append(k_sample)
+
     kwargs = dict(FLAGS.config)
     agent = Learner(FLAGS.seed,
                     env.observation_space.sample()[np.newaxis],
