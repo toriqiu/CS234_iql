@@ -1,3 +1,4 @@
+keras
 numpy >= 1.20.2
 scipy >= 1.6.0
 absl-py >= 0.12.0
