@@ -24,7 +24,7 @@ LOG_STD_MAX = 2.0
 class NonMarkovPolicy(nn.Module):
     hidden_dims: Sequence[int]
     action_dim: int
-    state_dependent_std: bool = True  # Change when non-Markovian
+    state_dependent_std: bool = True
     dropout_rate: Optional[float] = None
     log_std_scale: float = 1.0
     log_std_min: Optional[float] = None
@@ -37,7 +37,7 @@ class NonMarkovPolicy(nn.Module):
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
         model = Sequential()
-        model.add(LSTM(256, input_shape=(observations.shape[0], observations.shape[1]), return_sequences=True))
+        model.add(LSTM(256, input_shape=(observations.shape[0], observations.shape[1]), return_sequences=False))
         model.add(Dropout(self.dropout_rate))
         model.add(LSTM(256, return_sequences=True))
         model.add(Dropout(self.dropout_rate))

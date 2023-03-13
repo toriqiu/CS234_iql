@@ -84,53 +84,18 @@ def main(_):
 
     env, dataset = make_env_and_dataset(FLAGS.env_name, FLAGS.seed)
 
-    k = 6 # TODO: change this later
-    trajectories = split_into_trajectories(dataset.observations, dataset.actions, dataset.rewards, dataset.masks,
-                                           dataset.dones_float,
-                                           dataset.next_observations)
-
-    # print(len(trajectories))
-    new_dataset = []
-    for trajectory in trajectories:
-        trajectory_length = len(trajectory)
-        for start_i in range(trajectory_length - k):
-            end_i = start_i + k
-            # print(start_i, end_i)
-            k_sample = trajectory[start_i:end_i]  # [(s_i, a_i, s_i+1, a_i+1...), (), (), ()]
-            new_dataset.append(k_sample)
-
     kwargs = dict(FLAGS.config)
     agent = Learner(FLAGS.seed,
                     env.observation_space.sample()[np.newaxis],
                     env.action_space.sample()[np.newaxis],
                     max_steps=FLAGS.max_steps,
                     **kwargs)
-    batch = non_markov_sample(new_dataset, FLAGS.batch_size)
-    # batch = dataset.sample(FLAGS.batch_size) # .sample returns an an object of observations, actions, rewards, masks, and next_observations
-
-    # print(batch)
-    # print(batch.observations.shape) #256, k, 29
-    # print(batch.actions.shape)
-    # print(batch.rewards.shape)
-    # print(batch.next_observations.shape)
-    # print(batch.masks.shape)
-    batch = non_markov_sample(new_dataset, FLAGS.batch_size)
-
-    # batch[0] => [(), (), ()] #k tuples
-    # 29 feature "embedding"
-    # LSTMs "I like food" =>
-    # I -> 10 features
-    # Like -> 10 features
-
-    # pad actions to be state size => state feature "embedding"
-    # s_i => embedding
-    # LSTM 2K inputs,
 
     eval_returns = []
     for i in tqdm.tqdm(range(1, FLAGS.max_steps + 1),
                        smoothing=0.1,
                        disable=not FLAGS.tqdm):
-        batch = dataset.sample(FLAGS.batch_size)
+        batch = dataset.sample(6, FLAGS.batch_size) # Pass in value for k
 
         update_info = agent.update(batch)
 

@@ -10,12 +10,6 @@ Batch = collections.namedtuple(
     'Batch',
     ['observations', 'actions', 'rewards', 'masks', 'next_observations'])
 
-def non_markov_sample(dataset, batch_size):
-    dataset_size = len(dataset)
-    indices = np.random.choice(dataset_size, batch_size, replace=False)
-    # for index in
-    # return dataset[indices]
-
 def split_into_trajectories(observations, actions, rewards, masks, dones_float,
                             next_observations):
     trajs = [[]]
@@ -64,13 +58,20 @@ class Dataset(object):
         self.next_observations = next_observations
         self.size = size
 
-    def sample(self, batch_size: int) -> Batch:
-        indx = np.random.randint(self.size, size=batch_size)
-        return Batch(observations=self.observations[indx],
-                     actions=self.actions[indx],
-                     rewards=self.rewards[indx],
-                     masks=self.masks[indx],
-                     next_observations=self.next_observations[indx])
+    # Modified to take in k as window size
+    def sample(self, k: int, batch_size: int) -> Batch:
+        indx = np.random.randint(self.size - k, size=batch_size)
+        window = []
+        for j in range(batch_size):
+            i = indx[j]
+            window.append(np.arange(i, i + k))
+        window = np.array(window)
+
+        return Batch(observations=self.observations[window],
+                     actions=self.actions[window],
+                     rewards=self.rewards[window],
+                     masks=self.masks[window],
+                     next_observations=self.next_observations[window])
 
 
 class D4RLDataset(Dataset):
