@@ -11,8 +11,8 @@ import jax.numpy as jnp
 import numpy as np
 from tensorflow_probability.substrates import jax as tfp
 from common import MLP, Params, PRNGKey, default_init
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, LSTM
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, LSTM, Input
 
 tfd = tfp.distributions
 tfb = tfp.bijectors
@@ -36,15 +36,27 @@ class NonMarkovPolicy(nn.Module):
                  observations: jnp.ndarray,
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
-        model = Sequential()
-        model.add(LSTM(256, input_shape=(observations.shape[0], observations.shape[1]), return_sequences=False))
-        model.add(Dropout(self.dropout_rate))
-        model.add(LSTM(256, return_sequences=True))
-        model.add(Dropout(self.dropout_rate))
-        model.add(LSTM(128))
-        model.add(Dropout(self.dropout_rate))
-        model.add(Dense(self.action_dim, activation='softmax'))
-        model.compile(loss='categorical_crossentropy', optimizer='adam')
+        # model = Sequential()
+        # model.add(LSTM(256, input_shape=(observations.shape[0], observations.shape[1]), return_sequences=False))
+        # model.add(Dropout(self.dropout_rate))
+        # model.add(LSTM(256, return_sequences=True))
+        # model.add(Dropout(self.dropout_rate))
+        # model.add(LSTM(128))
+        # model.add(Dropout(self.dropout_rate))
+        # model.add(Dense(self.action_dim, activation='softmax'))
+        # model.compile(loss='categorical_crossentropy', optimizer='adam')
+        batch_size = self.hidden_dims[0]
+        dropout_rate = 0.2
+        print((batch_size, 6, observations.shape[-1]))
+        ts_inputs = Input(shape=(batch_size, 6, observations.shape[-1]))
+
+        # units=10 -> The cell and hidden states will be of dimension 10.
+        #             The number of parameters that need to be trained = 4*units*(units+2)
+        x = LSTM(units=batch_size)(ts_inputs)
+        x = Dropout(dropout_rate)(x)
+        outputs = Dense(self.action_dim, activation='tanh')(x)
+        model = Model(inputs=ts_inputs, outputs=outputs)
+
 
         means = nn.Dense(self.action_dim, kernel_init=default_init())(model)
 

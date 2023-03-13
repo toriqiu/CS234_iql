@@ -9,7 +9,7 @@ from ml_collections import config_flags
 from tensorboardX import SummaryWriter
 
 import wrappers
-from dataset_utils import D4RLDataset, split_into_trajectories, non_markov_sample
+from dataset_utils import D4RLDataset, split_into_trajectories
 from evaluation import evaluate
 from learner import Learner
 
@@ -62,6 +62,8 @@ def make_env_and_dataset(env_name: str,
     env.seed(seed)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
+    env.observation_space = gym.spaces.Box(low=([6, 29]), high=np.array([6, 29]), shape=(6, 29))
+    # high and low
 
     dataset = D4RLDataset(env)
 
