@@ -36,37 +36,40 @@ class NonMarkovPolicy(nn.Module):
                  observations: jnp.ndarray,
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
-        # model = Sequential()
-        # model.add(LSTM(256, input_shape=(observations.shape[0], observations.shape[1]), return_sequences=False))
-        # model.add(Dropout(self.dropout_rate))
+        batch_size = self.hidden_dims[0]
+        dropout_rate = 0.2
+        model = Sequential()
+        # (256, k, 29)
+        model.add(LSTM(self.action_dim, input_shape=(observations.shape[1], observations.shape[2]), return_sequences=True))
+        model.add(Dropout(dropout_rate))
         # model.add(LSTM(256, return_sequences=True))
         # model.add(Dropout(self.dropout_rate))
         # model.add(LSTM(128))
         # model.add(Dropout(self.dropout_rate))
-        # model.add(Dense(self.action_dim, activation='softmax'))
-        # model.compile(loss='categorical_crossentropy', optimizer='adam')
-        batch_size = self.hidden_dims[0]
-        dropout_rate = 0.2
-        print((batch_size, 6, observations.shape[-1]))
-        ts_inputs = Input(shape=(batch_size, 6, observations.shape[-1]))
 
-        # units=10 -> The cell and hidden states will be of dimension 10.
-        #             The number of parameters that need to be trained = 4*units*(units+2)
-        x = LSTM(units=batch_size)(ts_inputs)
-        x = Dropout(dropout_rate)(x)
-        outputs = Dense(self.action_dim, activation='tanh')(x)
-        model = Model(inputs=ts_inputs, outputs=outputs)
+        # (256, k, 29)
+        # (1, 29) -> (1, k, 29)
+        model.add(Dense(self.action_dim, activation='tanh'))
+        model.compile(loss='crossentropy', optimizer='adam')
+        outputs = model(observations)
+        # print(observations.shape)
+        # ts_inputs = Input(shape=(6, observations.shape[-1]), batch_size=batch_size)
+        # # shape: (1, 6, 29)
+        # x = LSTM(units=self.action_dim)(ts_inputs)
+        # x = Dropout(dropout_rate)(x)
+        # outputs = Dense(self.action_dim, activation='tanh')(x)
+        # model = Model(inputs=ts_inputs, outputs=outputs)
 
-
-        means = nn.Dense(self.action_dim, kernel_init=default_init())(model)
+        print("outputs:", outputs.shape)
+        means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
         if self.state_dependent_std:
             log_stds = nn.Dense(self.action_dim,
                                 kernel_init=default_init(
-                                    self.log_std_scale))(model)
+                                    self.log_std_scale))(outputs)
         else:
             log_stds = self.param('log_stds', nn.initializers.zeros,
-                                  (self.action_dim,))
+                                  (self.action_dim,)) # don't change dimension
 
         log_std_min = self.log_std_min or LOG_STD_MIN
         log_std_max = self.log_std_max or LOG_STD_MAX
