@@ -59,6 +59,7 @@ class Dataset(object):
         self.size = size
 
     # Modified to take in k as window size
+    # todo: 
     def sample(self, k: int, batch_size: int) -> Batch:
         indx = np.random.randint(self.size - k, size=batch_size)
         window = []

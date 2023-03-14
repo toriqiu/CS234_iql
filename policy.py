@@ -7,12 +7,14 @@ from typing import Optional, Sequence, Tuple
 
 import flax.linen as nn
 import jax
+import jax.dlpack
 import jax.numpy as jnp
 import numpy as np
 from tensorflow_probability.substrates import jax as tfp
 from common import MLP, Params, PRNGKey, default_init
 from keras.models import Sequential, Model
 from keras.layers import Dense, Dropout, LSTM, Input
+import tensorflow as tf
 
 tfd = tfp.distributions
 tfb = tfp.bijectors
@@ -36,12 +38,14 @@ class NonMarkovPolicy(nn.Module):
                  observations: jnp.ndarray,
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
+        print(f'observations: {observations.shape}')
         batch_size = self.hidden_dims[0]
         dropout_rate = 0.2
-        model = Sequential()
         # (256, k, 29)
-        model.add(LSTM(self.action_dim, input_shape=(observations.shape[1], observations.shape[2]), return_sequences=True))
-        model.add(Dropout(dropout_rate))
+
+        #(1, 6, 29) -> (1, 6, 8)
+        model = LSTM(256, input_shape=(observations.shape[1], observations.shape[2]), return_sequences=True, dropout=dropout_rate, activation='tanh')
+        
         # model.add(LSTM(256, return_sequences=True))
         # model.add(Dropout(self.dropout_rate))
         # model.add(LSTM(128))
@@ -49,8 +53,9 @@ class NonMarkovPolicy(nn.Module):
 
         # (256, k, 29)
         # (1, 29) -> (1, k, 29)
-        model.add(Dense(self.action_dim, activation='tanh'))
-        model.compile(loss='crossentropy', optimizer='adam')
+        # model.compile(loss='crossentropy', optimizer='adam')
+
+
         outputs = model(observations)
         # print(observations.shape)
         # ts_inputs = Input(shape=(6, observations.shape[-1]), batch_size=batch_size)
@@ -60,7 +65,12 @@ class NonMarkovPolicy(nn.Module):
         # outputs = Dense(self.action_dim, activation='tanh')(x)
         # model = Model(inputs=ts_inputs, outputs=outputs)
 
-        print("outputs:", outputs.shape)
+
+        print(f'b outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
+        outputs = jax.dlpack.from_dlpack(tf.experimental.dlpack.to_dlpack(outputs))
+        print(f'a outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
+
+        # (1, 6, 8) -> (6, 8)
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
         if self.state_dependent_std:
@@ -81,6 +91,13 @@ class NonMarkovPolicy(nn.Module):
         base_dist = tfd.MultivariateNormalDiag(loc=means,
                                                scale_diag=jnp.exp(log_stds) *
                                                           temperature)
+        print(f'after {base_dist} {type(base_dist)}')
+
+        if self.tanh_squash_distribution:
+            return tfd.TransformedDistribution(distribution=base_dist,
+                                               bijector=tfb.Tanh())
+        else:
+            return base_dist
 
         return base_dist
 
@@ -100,11 +117,14 @@ class NormalTanhPolicy(nn.Module):
                  observations: jnp.ndarray,
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
+        
+        # (1, 6, 29)
+        print(f'observations: {observations.shape}')
         outputs = MLP(self.hidden_dims,
                       activate_final=True,
                       dropout_rate=self.dropout_rate)(observations,
                                                       training=training)
-
+        print(f'outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
         if self.state_dependent_std:
@@ -144,7 +164,9 @@ def _sample_actions(rng: PRNGKey,
                     temperature: float = 1.0) -> Tuple[PRNGKey, jnp.ndarray]:
     dist = actor_def.apply({'params': actor_params}, observations, temperature)
     rng, key = jax.random.split(rng)
-    return rng, dist.sample(seed=key)
+    toreturn = dist.sample(seed=key)
+    print(f'toreturn: {toreturn.shape}')
+    return rng, toreturn
 
 
 # Sample k times

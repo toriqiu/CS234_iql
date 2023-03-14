@@ -62,7 +62,8 @@ def make_env_and_dataset(env_name: str,
     env.seed(seed)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
-    env.observation_space = gym.spaces.Box(low=([6, 29]), high=np.array([6, 29]), shape=(6, 29))
+    env.observation_space = gym.spaces.Box(low=6, high=29, shape=(6, 29))
+    env.action_space = gym.spaces.Box(low=6, high=8, shape=(6, 8))
     # high and low
 
     dataset = D4RLDataset(env)
