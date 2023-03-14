@@ -15,6 +15,10 @@ from common import MLP, Params, PRNGKey, default_init
 from keras.models import Sequential, Model
 from keras.layers import Dense, Dropout, LSTM, Input
 import tensorflow as tf
+from jax import random
+
+from flax.linen import initializers
+
 
 tfd = tfp.distributions
 tfb = tfp.bijectors
@@ -44,33 +48,30 @@ class NonMarkovPolicy(nn.Module):
         # (256, k, 29)
 
         #(1, 6, 29) -> (1, 6, 8)
-        model = LSTM(256, input_shape=(observations.shape[1], observations.shape[2]), return_sequences=True, dropout=dropout_rate, activation='tanh')
+        # model = LSTM(256, input_shape=(observations.shape[1], observations.shape[2]), return_sequences=True, dropout=dropout_rate, activation='tanh')
         
-        # model.add(LSTM(256, return_sequences=True))
-        # model.add(Dropout(self.dropout_rate))
-        # model.add(LSTM(128))
-        # model.add(Dropout(self.dropout_rate))
+        dim1, dim2, dim3 = observations.shape
 
-        # (256, k, 29)
-        # (1, 29) -> (1, k, 29)
-        # model.compile(loss='crossentropy', optimizer='adam')
+        
+        hidden_dim = 256
+        hiddens = []
+        carry = nn.LSTMCell.initialize_carry(random.PRNGKey(0), (dim1,), 256) # size 1, 256 
+        # https://flax.readthedocs.io/en/latest/_modules/flax/linen/recurrent.html
 
+        for i in range(6):
+          x = observations[:, i, :]
+          # print(x.shape)
+          # print(carry[0].shape, carry[1].shape)
+          new_carry, y = nn.LSTMCell()(carry, x) #(new_c, new_h), new_h
+          carry = new_carry
+          hiddens.append(y)
 
-        outputs = model(observations)
-        # print(observations.shape)
-        # ts_inputs = Input(shape=(6, observations.shape[-1]), batch_size=batch_size)
-        # # shape: (1, 6, 29)
-        # x = LSTM(units=self.action_dim)(ts_inputs)
-        # x = Dropout(dropout_rate)(x)
-        # outputs = Dense(self.action_dim, activation='tanh')(x)
-        # model = Model(inputs=ts_inputs, outputs=outputs)
+        # print(f'hiddens[0]: {hiddens[0].shape}')
 
+        outputs = jnp.array(hiddens).reshape(dim1, dim2, 256)
 
-        print(f'b outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
-        outputs = jax.dlpack.from_dlpack(tf.experimental.dlpack.to_dlpack(outputs))
-        print(f'a outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
+        print(f'outputs: {outputs.shape}')
 
-        # (1, 6, 8) -> (6, 8)
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
         if self.state_dependent_std:
@@ -91,7 +92,7 @@ class NonMarkovPolicy(nn.Module):
         base_dist = tfd.MultivariateNormalDiag(loc=means,
                                                scale_diag=jnp.exp(log_stds) *
                                                           temperature)
-        print(f'after {base_dist} {type(base_dist)}')
+        # print(f'after {base_dist} {type(base_dist)}')
 
         if self.tanh_squash_distribution:
             return tfd.TransformedDistribution(distribution=base_dist,
