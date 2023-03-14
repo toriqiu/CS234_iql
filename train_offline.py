@@ -111,16 +111,18 @@ def main(_):
             summary_writer.flush()
 
         if i % FLAGS.eval_interval == 0:
+            print('evaluating...')
             eval_stats = evaluate(agent, env, FLAGS.eval_episodes)
-
+            print('did the eval_stats...')
             for k, v in eval_stats.items():
                 summary_writer.add_scalar(f'evaluation/average_{k}s', v, i)
             summary_writer.flush()
-
+            print('flushed summary')
             eval_returns.append((i, eval_stats['return']))
             np.savetxt(os.path.join(FLAGS.save_dir, f'{FLAGS.seed}.txt'),
                        eval_returns,
                        fmt=['%d', '%.1f'])
+            print('np.savetxt')
 
 
 if __name__ == '__main__':
