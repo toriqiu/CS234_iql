@@ -66,7 +66,7 @@ class Dataset(object):
             i = indx[j]
             
             # Keep resampling until we're not splitting trajectories within the k observations
-            if (not np.all(self.dones_float[i:i+k] == False)):
+            while (not np.all(self.dones_float[i:i+k] == False)):
               i = np.random.randint(self.size - k)              
            
             window.append(np.arange(i, i + k))
