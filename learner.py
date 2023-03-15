@@ -78,7 +78,7 @@ class Learner(object):
 
         action_dim = actions.shape[-1]
         # Changed from NormalTanhPolicy to NonMarkovPolicy
-        actor_def = policy.NonMarkovPolicy(hidden_dims,
+        actor_def = policy.NormalTanhPolicy(hidden_dims,
                                             action_dim,
                                             log_std_scale=1e-3,
                                             log_std_min=-5.0,

@@ -54,21 +54,32 @@ class NonMarkovPolicy(nn.Module):
 
         
         hidden_dim = 256
-        hiddens = []
+        
+        # hiddens = jnp.array()
+        output = None
+        
+        # action_to_take = None
         carry = nn.LSTMCell.initialize_carry(random.PRNGKey(0), (dim1,), 256) # size 1, 256 
         # https://flax.readthedocs.io/en/latest/_modules/flax/linen/recurrent.html
 
-        for i in range(6):
+        for i in range(dim2):
           x = observations[:, i, :]
           # print(x.shape)
           # print(carry[0].shape, carry[1].shape)
           new_carry, y = nn.LSTMCell()(carry, x) #(new_c, new_h), new_h
           carry = new_carry
-          hiddens.append(y)
+          y = y.reshape(dim1, 1, 256)
+
+          if output == None: output = y
+          else: output = jnp.concatenate((output, y), axis=1)
+          # hiddens.append(y)
+          print(f'y - {y.shape} {type(y)} {y.dtype}')
+          # print(f'output - {output.shape} {type(output)} {output.dtype}')
 
         # print(f'hiddens[0]: {hiddens[0].shape}')
 
-        outputs = jnp.array(hiddens).reshape(dim1, dim2, 256)
+        outputs = output
+        # outputs = jnp.array(hiddens).reshape(dim1, dim2, 256)
 
         # print(f'outputs: {outputs.shape}')
 
@@ -166,7 +177,6 @@ def _sample_actions(rng: PRNGKey,
     dist = actor_def.apply({'params': actor_params}, observations, temperature)
     rng, key = jax.random.split(rng)
     toreturn = dist.sample(seed=key)
-    print(f'toreturn: {toreturn.shape}')
     return rng, toreturn
 
 

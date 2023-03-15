@@ -10,23 +10,17 @@ def evaluate(agent: nn.Module, env: gym.Env,
     stats = {'return': [], 'length': []}
 
     for _ in range(num_episodes):
-        env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(6, 29))
-        env.action_space = gym.spaces.Box(low=-1, high=1, shape=(6, 8))
         observation, done = env.reset(), False
-        # (29) -> # (1, 6, 29)
-        padding = np.zeros((1, 6, 29))
-        padding[0,5,:] = observation
-        observation = padding
-        # print(observation.shape)
+        observation = observation.reshape(1, 1, 29)
+
         while not done:
             action = agent.sample_actions(observation, temperature=0.0)
-            observation, _, done, info = env.step(action[0,-1,:])
-
-            for i in range(5):
-              padding[0,i,:] = padding[0,i+1,:]
-            padding[0,5,:] = observation
-            observation = padding
-
+            next_observation, _, done, info = env.step(action[0,-1,:])
+            next_observation = next_observation.reshape(1, 1, 29)
+            
+            observation = np.concatenate((observation, next_observation), axis=1)
+            if observation.shape[1] > 6:
+              observation = observation[:, -6:, :]
 
         for k in stats.keys():
             stats[k].append(info['episode'][k])
