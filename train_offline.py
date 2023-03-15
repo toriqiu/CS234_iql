@@ -60,10 +60,11 @@ def make_env_and_dataset(env_name: str,
     env = wrappers.SinglePrecision(env)
 
     env.seed(seed)
+    print(env.observation_space, env.action_space)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
-    env.observation_space = gym.spaces.Box(low=6, high=29, shape=(6, 29))
-    env.action_space = gym.spaces.Box(low=6, high=8, shape=(6, 8))
+    env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(6, 29))
+    env.action_space = gym.spaces.Box(low=-1, high=1, shape=(6, 8))
     # high and low
 
     dataset = D4RLDataset(env)

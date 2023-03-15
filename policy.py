@@ -42,7 +42,7 @@ class NonMarkovPolicy(nn.Module):
                  observations: jnp.ndarray,
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
-        print(f'observations: {observations.shape}')
+        # print(f'observations: {observations.shape}')
         batch_size = self.hidden_dims[0]
         dropout_rate = 0.2
         # (256, k, 29)
@@ -70,7 +70,7 @@ class NonMarkovPolicy(nn.Module):
 
         outputs = jnp.array(hiddens).reshape(dim1, dim2, 256)
 
-        print(f'outputs: {outputs.shape}')
+        # print(f'outputs: {outputs.shape}')
 
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
