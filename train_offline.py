@@ -13,6 +13,9 @@ from dataset_utils import D4RLDataset, split_into_trajectories
 from evaluation import evaluate
 from learner import Learner
 
+# SET K HERE
+k = 15
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('env_name', 'halfcheetah-expert-v2', 'Environment name.')
@@ -60,12 +63,11 @@ def make_env_and_dataset(env_name: str,
     env = wrappers.SinglePrecision(env)
 
     env.seed(seed)
-    print(env.observation_space, env.action_space)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
-    env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(6, 29))
-    env.action_space = gym.spaces.Box(low=-1, high=1, shape=(6, 8))
-    # high and low
+    # Observation dim = 29, action dim = 8
+    env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(k, 29))
+    env.action_space = gym.spaces.Box(low=-1, high=1, shape=(k, 8))
 
     dataset = D4RLDataset(env)
 
@@ -99,7 +101,7 @@ def main(_):
     for i in tqdm.tqdm(range(1, FLAGS.max_steps + 1),
                        smoothing=0.1,
                        disable=not FLAGS.tqdm):
-        batch = dataset.sample(6, FLAGS.batch_size) # Pass in value for k
+        batch = dataset.sample(k, FLAGS.batch_size) # Modified
 
         update_info = agent.update(batch)
 

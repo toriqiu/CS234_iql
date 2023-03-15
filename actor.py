@@ -15,15 +15,14 @@ def update(key: PRNGKey, actor: Model, critic: Model, value: Model,
     exp_a = jnp.minimum(exp_a, 100.0) # Why are we using 100 here?
 
     # Equation 7 from paper - modified from original IQL
-    # Sample k timesteps
-    # Put in the non-markov pi phi
+    # Sample k timesteps from dist.log_prob
     def actor_loss_fn(actor_params: Params) -> Tuple[jnp.ndarray, InfoDict]:
         dist = actor.apply({'params': actor_params},
                            batch.observations,
                            training=True,
                            rngs={'dropout': key})
         # pi (a|s) -> pi (a|s_t, a_{t-1}, ...., s_{t-k}, a_{t-k-1}
-        log_probs = dist.log_prob(batch.actions) # Change to k window of actions / states
+        log_probs = dist.log_prob(batch.actions) 
         actor_loss = -(exp_a * log_probs).mean()
 
         return actor_loss, {'actor_loss': actor_loss, 'adv': q - v}
