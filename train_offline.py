@@ -53,7 +53,7 @@ def normalize(dataset):
 
 
 def make_env_and_dataset(env_name: str,
-                         seed: int) -> Tuple[gym.Env, D4RLDataset]:
+                         seed: int, k: int) -> Tuple[gym.Env, D4RLDataset]:
     env = gym.make(env_name)
 
     env = wrappers.EpisodeMonitor(env)
@@ -63,8 +63,8 @@ def make_env_and_dataset(env_name: str,
     print(env.observation_space, env.action_space)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
-    env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(6, 29))
-    env.action_space = gym.spaces.Box(low=-1, high=1, shape=(6, 8))
+    env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(k, 29))
+    env.action_space = gym.spaces.Box(low=-1, high=1, shape=(k, 8))
     # high and low
 
     dataset = D4RLDataset(env)
@@ -86,7 +86,8 @@ def main(_):
                                    write_to_disk=True)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
 
-    env, dataset = make_env_and_dataset(FLAGS.env_name, FLAGS.seed)
+    k = 15 # change k here (4)
+    env, dataset = make_env_and_dataset(FLAGS.env_name, FLAGS.seed, k)
 
     kwargs = dict(FLAGS.config)
     agent = Learner(FLAGS.seed,
@@ -99,7 +100,7 @@ def main(_):
     for i in tqdm.tqdm(range(1, FLAGS.max_steps + 1),
                        smoothing=0.1,
                        disable=not FLAGS.tqdm):
-        batch = dataset.sample(6, FLAGS.batch_size) # Pass in value for k
+        batch = dataset.sample(15, FLAGS.batch_size) # change k here (3)
 
         update_info = agent.update(batch)
 

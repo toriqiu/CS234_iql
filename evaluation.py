@@ -19,8 +19,8 @@ def evaluate(agent: nn.Module, env: gym.Env,
             next_observation = next_observation.reshape(1, 1, 29)
             
             observation = np.concatenate((observation, next_observation), axis=1)
-            if observation.shape[1] > 6:
-              observation = observation[:, -6:, :]
+            if observation.shape[1] > 15: #change k here (2)
+              observation = observation[:, -15:, :] #change k here (1)
 
         for k in stats.keys():
             stats[k].append(info['episode'][k])

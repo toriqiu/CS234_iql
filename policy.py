@@ -45,17 +45,12 @@ class NonMarkovPolicy(nn.Module):
         # print(f'observations: {observations.shape}')
         batch_size = self.hidden_dims[0]
         dropout_rate = 0.2
-        # (256, k, 29)
-
-        #(1, 6, 29) -> (1, 6, 8)
-        # model = LSTM(256, input_shape=(observations.shape[1], observations.shape[2]), return_sequences=True, dropout=dropout_rate, activation='tanh')
-        
+         
         dim1, dim2, dim3 = observations.shape
 
         
         hidden_dim = 256
         
-        # hiddens = jnp.array()
         output = None
         
         # action_to_take = None
@@ -67,13 +62,14 @@ class NonMarkovPolicy(nn.Module):
           # print(x.shape)
           # print(carry[0].shape, carry[1].shape)
           new_carry, y = nn.LSTMCell()(carry, x) #(new_c, new_h), new_h
+          # y = nn.Dropout(rate=dropout_rate)(y, deterministic=False)
           carry = new_carry
           y = y.reshape(dim1, 1, 256)
 
           if output == None: output = y
           else: output = jnp.concatenate((output, y), axis=1)
           # hiddens.append(y)
-          print(f'y - {y.shape} {type(y)} {y.dtype}')
+          # print(f'y - {y.shape} {type(y)} {y.dtype}')
           # print(f'output - {output.shape} {type(output)} {output.dtype}')
 
         # print(f'hiddens[0]: {hiddens[0].shape}')

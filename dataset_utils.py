@@ -2,6 +2,7 @@ import collections
 from typing import Optional
 
 import d4rl
+from flax.core.frozen_dict import K
 import gym
 import numpy as np
 from tqdm import tqdm
