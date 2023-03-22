@@ -1,21 +1,8 @@
-# Offline Reinforcement Learning with Implicit Q-Learning
+Non-Markovian Policies in Implicit Q-learning
+by Tori Qiu, Pranay Agrawal and Jubayer Ibn Hamid
 
-CS 234 - Non-Markovian Policies in offline RL
+This repository contains our implementation of Non-Markovian Policies in Implicit Q-learning. We modified the codebase for the official implementation of [Offline Reinforcement Learning with Implicit Q-Learning](https://arxiv.org/abs/2110.06169) by [Ilya Kostrikov](https://kostrikov.xyz), [Ashvin Nair](https://ashvin.me/), and [Sergey Levine](https://people.eecs.berkeley.edu/~svlevine/).
 
-This repository contains the official implementation of [Offline Reinforcement Learning with Implicit Q-Learning](https://arxiv.org/abs/2110.06169) by [Ilya Kostrikov](https://kostrikov.xyz), [Ashvin Nair](https://ashvin.me/), and [Sergey Levine](https://people.eecs.berkeley.edu/~svlevine/).
-
-If you use this code for your research, please consider citing the paper:
-```
-@article{kostrikov2021iql,
-    title={Offline Reinforcement Learning with Implicit Q-Learning},
-    author={Ilya Kostrikov and Ashvin Nair and Sergey Levine},
-    year={2021},
-    archivePrefix={arXiv},
-    primaryClass={cs.LG}
-}
-```
-
-For a PyTorch reimplementation see https://github.com/rail-berkeley/rlkit/tree/master/examples/iql
 
 ## How to run the code
 
