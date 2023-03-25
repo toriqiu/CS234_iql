@@ -57,6 +57,7 @@ class Model:
                model_def: nn.Module,
                inputs: Sequence[jnp.ndarray],
                tx: Optional[optax.GradientTransformation] = None) -> 'Model':
+        print('common.create()')
         variables = model_def.init(*inputs)
 
         _, params = variables.pop('params')
@@ -70,15 +71,18 @@ class Model:
                    apply_fn=model_def,
                    params=params,
                    tx=tx,
-                   opt_state=opt_state)
+                   opt_state=opt_state) # forward on cls (policy)
 
     def __call__(self, *args, **kwargs):
+        print('common.call()')
         return self.apply_fn.apply({'params': self.params}, *args, **kwargs)
 
-    def apply(self, *args, **kwargs):
+    def apply(self, *args, **kwargs): # **calls policy** when called with actor
+        print('common.apply()')
         return self.apply_fn.apply(*args, **kwargs)
 
     def apply_gradient(self, loss_fn) -> Tuple[Any, 'Model']:
+        print('common.apply_gradient()')
         grad_fn = jax.grad(loss_fn, has_aux=True)
         grads, info = grad_fn(self.params)
 
@@ -91,11 +95,13 @@ class Model:
                             opt_state=new_opt_state), info
 
     def save(self, save_path: str):
+        print('common.save()')
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, 'wb') as f:
             f.write(flax.serialization.to_bytes(self.params))
 
     def load(self, load_path: str) -> 'Model':
+        print('common.load()')
         with open(load_path, 'rb') as f:
             params = flax.serialization.from_bytes(self.params, f.read())
         return self.replace(params=params)

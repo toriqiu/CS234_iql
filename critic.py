@@ -12,6 +12,7 @@ def loss(diff, expectile=0.8):
 # Equation 5 from paper
 def update_v(critic: Model, value: Model, batch: Batch,
              expectile: float) -> Tuple[Model, InfoDict]:
+    print("critic.update_v()")
     actions = batch.actions
 
     # Double critic method from value_net.py
@@ -27,12 +28,12 @@ def update_v(critic: Model, value: Model, batch: Batch,
         }
 
     new_value, info = value.apply_gradient(value_loss_fn)
-
     return new_value, info
 
 # Equation 6 from paper
 def update_q(critic: Model, target_value: Model, batch: Batch,
              discount: float) -> Tuple[Model, InfoDict]:
+    print("critic.update_q()")
     next_v = target_value(batch.next_observations)
 
     # r(s,a) + gamma * V(phi)
@@ -49,5 +50,4 @@ def update_q(critic: Model, target_value: Model, batch: Batch,
         }
 
     new_critic, info = critic.apply_gradient(critic_loss_fn)
-
     return new_critic, info

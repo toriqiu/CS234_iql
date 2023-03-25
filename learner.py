@@ -15,6 +15,7 @@ from critic import update_q, update_v
 
 
 def target_update(critic: Model, target_critic: Model, tau: float) -> Model:
+    print('learner.target_update()')
     new_target_params = jax.tree_map(
         lambda p, tp: p * tau + tp * (1 - tau), critic.params,
         target_critic.params)
@@ -29,15 +30,21 @@ def _update_jit(
     expectile: float, temperature: float
 ) -> Tuple[PRNGKey, Model, Model, Model, Model, Model, InfoDict]:
 
+    print('\n\n**** START learner._update_jit() ****')
+    print("\nlearner._update_jit().update_v()")
     new_value, value_info = update_v(target_critic, value, batch, expectile)
     key, rng = jax.random.split(rng)
+    print('\nlearner._update_jit().awr_update_actor()')
     new_actor, actor_info = awr_update_actor(key, actor, target_critic,
                                              new_value, batch, temperature)
 
+    print('\nlearner._update_jit().update_q()')
     new_critic, critic_info = update_q(critic, new_value, batch, discount)
 
+    print('\nlearner._update_jit().target_update()')
     new_target_critic = target_update(new_critic, target_critic, tau)
 
+    print('**** END learner._update_jit() ****\n\n')
     return rng, new_actor, new_critic, new_value, new_target_critic, {
         **critic_info,
         **value_info,
@@ -60,12 +67,15 @@ class Learner(object):
                  temperature: float = 0.1,
                  dropout_rate: Optional[float] = None,
                  max_steps: Optional[int] = None,
-                 opt_decay_schedule: str = "cosine"):
+                 opt_decay_schedule: str = "cosine",
+                 nonMarkovK: int = 0,
+                 normalTanhPolicy: bool = True,
+                 ):
         """
         An implementation of the version of Soft-Actor-Critic described in https://arxiv.org/abs/1801.01290
         Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor
         """
-
+        print('learner.init()')
         self.expectile = expectile
         self.tau = tau
         self.discount = discount
@@ -78,13 +88,22 @@ class Learner(object):
 
         action_dim = actions.shape[-1]
         # Changed from NormalTanhPolicy to NonMarkovPolicy
-        actor_def = policy.NonMarkovPolicy(hidden_dims,
-                                            action_dim,
-                                            log_std_scale=1e-3,
-                                            log_std_min=-5.0,
-                                            dropout_rate=dropout_rate,
-                                            state_dependent_std=False,
-                                            tanh_squash_distribution=False)
+        if normalTanhPolicy:
+          actor_def = policy.NormalTanhPolicy(hidden_dims,
+                                              action_dim,
+                                              log_std_scale=1e-3,
+                                              log_std_min=-5.0,
+                                              dropout_rate=dropout_rate,
+                                              state_dependent_std=False,
+                                              tanh_squash_distribution=False)
+        else:
+          actor_def = policy.NonMarkovPolicy(hidden_dims,
+                                    action_dim,
+                                    log_std_scale=1e-3,
+                                    log_std_min=-5.0,
+                                    dropout_rate=dropout_rate,
+                                    state_dependent_std=False,
+                                    tanh_squash_distribution=False)
 
         if opt_decay_schedule == "cosine":
             schedule_fn = optax.cosine_decay_schedule(-actor_lr, max_steps)
@@ -94,20 +113,24 @@ class Learner(object):
             optimiser = optax.adam(learning_rate=actor_lr)
 
         # Evaluate the Q-function of the current policy and update the policy through an off-policy gradient update.
+        print('learner.Model.create(actor_def)')
         actor = Model.create(actor_def,
                              inputs=[actor_key, observations],
                              tx=optimiser)
 
+        print('learner.Model.create(critic_def)')        
         critic_def = value_net.DoubleCritic(hidden_dims)
         critic = Model.create(critic_def,
                               inputs=[critic_key, observations, actions],
                               tx=optax.adam(learning_rate=critic_lr))
 
+        print('learner.Model.create(value_def)')        
         value_def = value_net.ValueCritic(hidden_dims)
         value = Model.create(value_def,
                              inputs=[value_key, observations],
                              tx=optax.adam(learning_rate=value_lr))
 
+        print('learner.Model.create(target_critic)')        
         target_critic = Model.create(
             critic_def, inputs=[critic_key, observations, actions])
 
@@ -120,6 +143,7 @@ class Learner(object):
     def sample_actions(self,
                        observations: np.ndarray,
                        temperature: float = 1.0) -> jnp.ndarray:
+        # print('Learner.sample_actions()')                       
         rng, actions = policy.sample_actions(self.rng, self.actor.apply_fn,
                                              self.actor.params, observations,
                                              temperature)
@@ -129,6 +153,7 @@ class Learner(object):
         return np.clip(actions, -1, 1)
 
     def update(self, batch: Batch) -> InfoDict:
+        print("learner.update()")
         new_rng, new_actor, new_critic, new_value, new_target_critic, info = _update_jit(
             self.rng, self.actor, self.critic, self.value, self.target_critic,
             batch, self.discount, self.tau, self.expectile, self.temperature)

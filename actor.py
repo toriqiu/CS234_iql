@@ -7,9 +7,10 @@ from common import Batch, InfoDict, Model, Params, PRNGKey
 
 def update(key: PRNGKey, actor: Model, critic: Model, value: Model,
            batch: Batch, temperature: float) -> Tuple[Model, InfoDict]:
-    v = value(batch.observations)
+    print("actor.update()")
+    v = value(batch.observations) #calls common, value_net
     # Update policy distribution based on critic
-    q1, q2 = critic(batch.observations, batch.actions)
+    q1, q2 = critic(batch.observations, batch.actions) #calls common, double critic, critic, critic
     q = jnp.minimum(q1, q2)
     exp_a = jnp.exp((q - v) * temperature) # exp ^ [Q(theta hat) - V(phi)]
     exp_a = jnp.minimum(exp_a, 100.0) # Why are we using 100 here?
@@ -27,7 +28,8 @@ def update(key: PRNGKey, actor: Model, critic: Model, value: Model,
         actor_loss = -(exp_a * log_probs).mean()
 
         return actor_loss, {'actor_loss': actor_loss, 'adv': q - v}
-
+    
+    print('calling actor.apply_gradient()')
     new_actor, info = actor.apply_gradient(actor_loss_fn)
 
     return new_actor, info

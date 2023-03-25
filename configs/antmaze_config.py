@@ -18,4 +18,7 @@ def get_config():
 
     config.tau = 0.005  # For soft target updates.
 
+    config.nonMarkovK = 15
+    config.normalTanhPolicy = False
+
     return config

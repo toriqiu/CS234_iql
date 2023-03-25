@@ -42,6 +42,8 @@ class NonMarkovPolicy(nn.Module):
                  observations: jnp.ndarray,
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
+        
+        print(f'policy.NonMarkovPolicy.call() {observations.shape}')
         # print(f'observations: {observations.shape}')
         batch_size = self.hidden_dims[0]
         dropout_rate = 0.2
@@ -127,12 +129,13 @@ class NormalTanhPolicy(nn.Module):
                  training: bool = False) -> tfd.Distribution:
         
         # (1, 6, 29)
-        print(f'observations: {observations.shape}')
+        print('policy.NormalTanhPolicy.call() {observations.shape}')
+        # print(f'observations: {observations.shape}')
         outputs = MLP(self.hidden_dims,
                       activate_final=True,
                       dropout_rate=self.dropout_rate)(observations,
                                                       training=training)
-        print(f'outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
+        # print(f'outputs: {outputs.shape} {outputs.dtype} {type(outputs)}')
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 
         if self.state_dependent_std:
@@ -142,6 +145,7 @@ class NormalTanhPolicy(nn.Module):
         else:
             log_stds = self.param('log_stds', nn.initializers.zeros,
                                   (self.action_dim, ))
+            print(f'log_stds: {log_stds}')
 
         log_std_min = self.log_std_min or LOG_STD_MIN
         log_std_max = self.log_std_max or LOG_STD_MAX
@@ -170,6 +174,7 @@ def _sample_actions(rng: PRNGKey,
                     actor_params: Params,
                     observations: np.ndarray,
                     temperature: float = 1.0) -> Tuple[PRNGKey, jnp.ndarray]:
+    # print('policy._sample_actions()')
     dist = actor_def.apply({'params': actor_params}, observations, temperature)
     rng, key = jax.random.split(rng)
     toreturn = dist.sample(seed=key)

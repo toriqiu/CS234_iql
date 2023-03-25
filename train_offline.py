@@ -12,6 +12,7 @@ import wrappers
 from dataset_utils import D4RLDataset, split_into_trajectories
 from evaluation import evaluate
 from learner import Learner
+from datetime import datetime
 
 FLAGS = flags.FLAGS
 
@@ -23,7 +24,7 @@ flags.DEFINE_integer('eval_episodes', 10,
 flags.DEFINE_integer('log_interval', 1000, 'Logging interval.')
 flags.DEFINE_integer('eval_interval', 5000, 'Eval interval.')
 flags.DEFINE_integer('batch_size', 256, 'Mini batch size.')
-flags.DEFINE_integer('max_steps', int(1e6), 'Number of training steps.')
+flags.DEFINE_integer('max_steps', int(1e4), 'Number of training steps.')
 flags.DEFINE_boolean('tqdm', True, 'Use tqdm progress bar.')
 config_flags.DEFINE_config_file(
     'config',
@@ -86,10 +87,12 @@ def main(_):
                                    write_to_disk=True)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
 
-    k = 15 # change k here (4)
-    env, dataset = make_env_and_dataset(FLAGS.env_name, FLAGS.seed, k)
-
     kwargs = dict(FLAGS.config)
+    nonMarkovK = kwargs['nonMarkovK']
+
+    env, dataset = make_env_and_dataset(FLAGS.env_name, FLAGS.seed, nonMarkovK) # change k here (4)
+
+
     agent = Learner(FLAGS.seed,
                     env.observation_space.sample()[np.newaxis],
                     env.action_space.sample()[np.newaxis],
@@ -97,13 +100,26 @@ def main(_):
                     **kwargs)
 
     eval_returns = []
+
+    policy_name = 'NormalTanhPolicy' if kwargs['normalTanhPolicy'] else 'NonMarkovPolicy'
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    str_header = f'K={nonMarkovK} {policy_name} seed={FLAGS.seed} {FLAGS.env_name} {dt_string}'
+    
+    np_filename = f'{nonMarkovK}_{policy_name}_{FLAGS.seed}_{FLAGS.env_name}'
+    np_filepath = os.path.join(FLAGS.save_dir, np_filename)
+    file_counter = 1
+    while os.path.exists(f'{np_filepath}_{file_counter}.txt'):
+      file_counter += 1
+    np_filepath = f'{np_filepath}_{file_counter}.txt'
     for i in tqdm.tqdm(range(1, FLAGS.max_steps + 1),
                        smoothing=0.1,
                        disable=not FLAGS.tqdm):
-        batch = dataset.sample(15, FLAGS.batch_size) # change k here (3)
+        batch = dataset.sample(nonMarkovK, FLAGS.batch_size) # change k here (3)
 
+        # print(f'\ntrain_offline() => (Learner) agent.update()')
         update_info = agent.update(batch)
-
+        # input('waiting...')
         if i % FLAGS.log_interval == 0:
             for k, v in update_info.items():
                 if v.ndim == 0:
@@ -113,18 +129,16 @@ def main(_):
             summary_writer.flush()
 
         if i % FLAGS.eval_interval == 0:
-            print('evaluating...')
-            eval_stats = evaluate(agent, env, FLAGS.eval_episodes)
-            print('did the eval_stats...')
+            print('train_offline() => evaluate()')
+            eval_stats = evaluate(agent, env, FLAGS.eval_episodes, nonMarkovK)
             for k, v in eval_stats.items():
                 summary_writer.add_scalar(f'evaluation/average_{k}s', v, i)
             summary_writer.flush()
-            print('flushed summary')
             eval_returns.append((i, eval_stats['return']))
-            np.savetxt(os.path.join(FLAGS.save_dir, f'{FLAGS.seed}.txt'),
+            np.savetxt(np_filepath,
                        eval_returns,
+                       header=str_header,
                        fmt=['%d', '%.1f'])
-            print('np.savetxt')
 
 
 if __name__ == '__main__':

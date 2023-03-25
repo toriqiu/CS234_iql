@@ -11,6 +11,7 @@ class ValueCritic(nn.Module):
 
     @nn.compact
     def __call__(self, observations: jnp.ndarray) -> jnp.ndarray:
+        print('value_net.ValueCritic.call()')        
         critic = MLP((*self.hidden_dims, 1))(observations)
         return jnp.squeeze(critic, -1)
 
@@ -22,6 +23,7 @@ class Critic(nn.Module):
     @nn.compact
     def __call__(self, observations: jnp.ndarray,
                  actions: jnp.ndarray) -> jnp.ndarray:
+        print('value_net.Critic.call()')        
         inputs = jnp.concatenate([observations, actions], -1)
         critic = MLP((*self.hidden_dims, 1),
                      activations=self.activations)(inputs)
@@ -35,6 +37,7 @@ class DoubleCritic(nn.Module):
     @nn.compact
     def __call__(self, observations: jnp.ndarray,
                  actions: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        print('value_net.DoubleCritic.call()')
         # Lab q theta hat
         critic1 = Critic(self.hidden_dims,
                          activations=self.activations)(observations, actions)
