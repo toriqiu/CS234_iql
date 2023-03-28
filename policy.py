@@ -43,43 +43,45 @@ class NonMarkovPolicy(nn.Module):
                  temperature: float = 1.0,
                  training: bool = False) -> tfd.Distribution:
         
-        print(f'policy.NonMarkovPolicy.call() {observations.shape}')
-        # print(f'observations: {observations.shape}')
-        batch_size = self.hidden_dims[0]
-        dropout_rate = 0.2
-         
-        dim1, dim2, dim3 = observations.shape
+        # print(f'policy.NonMarkovPolicy.call() {observations.shape}')
+        dropout_rate = 0.3
 
+        lstm_dims = [256, 256, 256]
         
-        hidden_dim = 256
-        
-        output = None
-        
-        # action_to_take = None
-        carry = nn.LSTMCell.initialize_carry(random.PRNGKey(0), (dim1,), 256) # size 1, 256 
         # https://flax.readthedocs.io/en/latest/_modules/flax/linen/recurrent.html
 
-        for i in range(dim2):
-          x = observations[:, i, :]
-          # print(x.shape)
-          # print(carry[0].shape, carry[1].shape)
-          new_carry, y = nn.LSTMCell()(carry, x) #(new_c, new_h), new_h
-          # y = nn.Dropout(rate=dropout_rate)(y, deterministic=False)
-          carry = new_carry
-          y = y.reshape(dim1, 1, 256)
+        # observations => (batch_size, k, 29)
+        outputs = observations
+        for lstm_dim in lstm_dims:
+          lstm = nn.RNN(nn.LSTMCell(), cell_size=lstm_dim)
+          variables = lstm.init(jax.random.PRNGKey(0), outputs)
+          outputs = lstm.apply(variables, outputs)
+          outputs = nn.Dropout(rate=dropout_rate)(
+                        outputs, deterministic=not training)
+          # print(f'outputs.shape {outputs.shape}') # (batch_size, k, hidden_dim)
 
-          if output == None: output = y
-          else: output = jnp.concatenate((output, y), axis=1)
-          # hiddens.append(y)
-          # print(f'y - {y.shape} {type(y)} {y.dtype}')
-          # print(f'output - {output.shape} {type(output)} {output.dtype}')
 
-        # print(f'hiddens[0]: {hiddens[0].shape}')
+        # batch_size = self.hidden_dims[0]
+        # dim1, dim2, dim3 = observations.shape
 
-        outputs = output
+        # for i in range(dim2):
+        #   x = observations[:, i, :]
+        #   # print(x.shape)
+        #   # print(carry[0].shape, carry[1].shape)
+        #   new_carry, y = nn.LSTMCell()(carry, x) #(new_c, new_h), new_h
+        #   # y = nn.Dropout(rate=dropout_rate)(y, deterministic=False)
+        #   carry = new_carry
+        #   y = y.reshape(dim1, 1, hidden_dim)
+
+        #   if output == None: output = y
+        #   else: output = jnp.concatenate((output, y), axis=1)
+        #   # hiddens.append(y)
+        #   # print(f'y - {y.shape} {type(y)} {y.dtype}')
+        #   # print(f'output - {output.shape} {type(output)} {output.dtype}')
+
+        # # print(f'hiddens[0]: {hiddens[0].shape}')
+
         # outputs = jnp.array(hiddens).reshape(dim1, dim2, 256)
-
-        # print(f'outputs: {outputs.shape}')
 
         means = nn.Dense(self.action_dim, kernel_init=default_init())(outputs)
 

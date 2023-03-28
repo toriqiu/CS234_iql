@@ -24,7 +24,7 @@ flags.DEFINE_integer('eval_episodes', 10,
 flags.DEFINE_integer('log_interval', 1000, 'Logging interval.')
 flags.DEFINE_integer('eval_interval', 5000, 'Eval interval.')
 flags.DEFINE_integer('batch_size', 256, 'Mini batch size.')
-flags.DEFINE_integer('max_steps', int(1e4), 'Number of training steps.')
+flags.DEFINE_integer('max_steps', int(1e6), 'Number of training steps.')
 flags.DEFINE_boolean('tqdm', True, 'Use tqdm progress bar.')
 config_flags.DEFINE_config_file(
     'config',
@@ -61,7 +61,7 @@ def make_env_and_dataset(env_name: str,
     env = wrappers.SinglePrecision(env)
 
     env.seed(seed)
-    print(env.observation_space, env.action_space)
+    # print(env.observation_space, env.action_space)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
     env.observation_space = gym.spaces.Box(low=float('-inf'), high=float('inf'), shape=(k, 29))
@@ -116,7 +116,7 @@ def main(_):
                        smoothing=0.1,
                        disable=not FLAGS.tqdm):
         batch = dataset.sample(nonMarkovK, FLAGS.batch_size) # change k here (3)
-
+        
         # print(f'\ntrain_offline() => (Learner) agent.update()')
         update_info = agent.update(batch)
         # input('waiting...')
@@ -129,7 +129,7 @@ def main(_):
             summary_writer.flush()
 
         if i % FLAGS.eval_interval == 0:
-            print('train_offline() => evaluate()')
+            # print('train_offline() => evaluate()')
             eval_stats = evaluate(agent, env, FLAGS.eval_episodes, nonMarkovK)
             for k, v in eval_stats.items():
                 summary_writer.add_scalar(f'evaluation/average_{k}s', v, i)
