@@ -97,7 +97,7 @@ class Learner(object):
                                               state_dependent_std=False,
                                               tanh_squash_distribution=False)
         else:
-          actor_def = policy.NonMarkovPolicy(hidden_dims,
+          actor_def = policy.TransformerPolicy(hidden_dims,
                                     action_dim,
                                     log_std_scale=1e-3,
                                     log_std_min=-5.0,
