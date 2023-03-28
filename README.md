@@ -19,6 +19,8 @@ For a PyTorch reimplementation see https://github.com/rail-berkeley/rlkit/tree/m
 
 ## How to run the code
 
+Google Colab template: https://colab.research.google.com/drive/1D85WH8jra30PbeXFMS1HzKWzryvl_DNN?usp=sharing 
+
 ### Install dependencies
 
 ```bash
@@ -34,19 +36,9 @@ Also, see other configurations for CUDA [here](https://github.com/google/jax#pip
 
 ### Run training
 
-Locomotion
-```bash
-python train_offline.py --env_name=halfcheetah-medium-expert-v2 --config=configs/mujoco_config.py
-```
-
 AntMaze
 ```bash
 python train_offline.py --env_name=antmaze-large-play-v0 --config=configs/antmaze_config.py --eval_episodes=100 --eval_interval=100000
-```
-
-Kitchen and Adroit
-```bash
-python train_offline.py --env_name=pen-human-v0 --config=configs/kitchen_config.py
 ```
 
 Finetuning on AntMaze tasks
