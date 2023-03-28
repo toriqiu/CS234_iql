@@ -27,6 +27,7 @@ class SelfAttention(hk.MultiHeadAttention):
         key = key if key is not None else query
         value = value if value is not None else query
         seq_len = query.shape[1]
+        # print("SEQ LEN", seq_len)
         causal_mask = np.tril(np.ones((seq_len, seq_len)))
         mask = mask * causal_mask if mask is not None else causal_mask
         # print('self attention', query.shape, key.shape, mask.shape)
@@ -78,7 +79,7 @@ class Transformer(hk.Module):
         Returns:
           Array of shape [B, T, H].
         """
-        mask = np.zeros((h.shape[0],5))
+        mask = np.ones((h.shape[0],h.shape[1]))
         init_scale = 2. / self._num_layers
         dropout_rate = self._dropout_rate if is_training else 0.
         if mask is not None:

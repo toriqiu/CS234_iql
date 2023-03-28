@@ -46,14 +46,11 @@ class TransformerPolicy(nn.Module):
         dropout_rate = 0.3
 
         
-        # model = Transformer(2,2,dropout_rate)
-        #         outputs = model(observations)
-        # observations = np.zeros((5,29))
 
         forward_fn = build_forward_fn(1, 256, 1,
                                   len(self.hidden_dims), dropout_rate)
         forward = hk.transform(forward_fn)
-        key = hk.PRNGSequence(42)
+        key = hk.PRNGSequence(42) # use FLAGs.seed
         # print('key and next(key)', key, next(key))
         params = forward.init(next(key), observations)
         outputs = forward.apply(params, jax.random.PRNGKey(0), observations)
