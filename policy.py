@@ -215,10 +215,7 @@ class NormalTanhPolicy(nn.Module):
 
         if not self.tanh_squash_distribution:
             means = nn.tanh(means)
-
-        # Add flag that says if non-Markov -> LSTM architecture using k
-        k = 5 # Just for testing - set this in config / as a hyperparameter later
-
+            
         base_dist = tfd.MultivariateNormalDiag(loc=means,
                                                scale_diag=jnp.exp(log_stds) *
                                                temperature)
